@@ -28,3 +28,16 @@ juju relate cos-prometheus:receive-remote-write grafana-agent-cos:send-remote-wr
 juju relate cos-grafana:grafana-dashboard grafana-agent-cos:grafana-dashboards-provider -m mk8s
 
 juju status -m mk8s
+
+#CKF+MLflow
+
+juju add-model kubeflow mk8s
+
+juju deploy -m kubeflow --debug ./ckf/bundle.yaml \
+    --overlay ./ckf/authentication-overlay.yaml \
+    --overlay ./ckf/access-overlay.yaml \
+    --overlay ./ckf/cos-integration.yaml \
+    --overlay ./ckf/mlflow-integration.yaml \
+    --trust
+
+

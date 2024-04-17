@@ -1,0 +1,8 @@
+---
+applications:
+  dex-auth:
+    options:
+      static-username: admin
+      static-password: admin
+      # connectors: dex-auth-config.yaml content
+

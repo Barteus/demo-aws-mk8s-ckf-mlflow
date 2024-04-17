@@ -1,0 +1,37 @@
+---
+applications:
+  mlflow-mysql:
+    charm: mysql-k8s
+    channel: 8.0/stable
+    scale: 1
+    trust: true
+    _github_repo_name: mysql-k8s-operator
+  mlflow-server:
+    charm: mlflow-server
+    channel: 2.1/stable
+    scale: 1
+    trust: true
+    _github_repo_name: mlflow-operator
+    options:
+      enable_mlflow_nodeport: false
+  resource-dispatcher:
+    charm: resource-dispatcher
+    channel: 1.0/stable
+    scale: 1
+    trust: true
+relations:
+- [mlflow-server, minio]
+- [mlflow-server, mlflow-mysql]
+- [mlflow-server:secrets, resource-dispatcher:secrets]
+- [mlflow-server:pod-defaults, resource-dispatcher:pod-defaults]
+- [mlflow-server:ingress, istio-pilot:ingress]
+- [kubeflow-dashboard:links, mlflow-server:dashboard-links]
+- [kserve-controller:service-accounts, resource-dispatcher:service-accounts]
+- [kserve-controller:secrets, resource-dispatcher:secrets]
+- [kserve-controller, minio]
+
+#COS integration
+- [mlflow-server, grafana-dashboards]
+- [mlflow-mysql, grafana-dashboards]
+- [grafana-agent-k8s:metrics-endpoint, mlflow-server:metrics-endpoint]
+- [grafana-agent-k8s:metrics-endpoint, mlflow-mysql:metrics-endpoint]
