@@ -23,6 +23,7 @@ juju consume aws-controller:admin/cos.prometheus-receive-remote-write cos-promet
 juju deploy grafana-agent grafana-agent-cos --channel latest/edge -m mk8s
 
 juju relate grafana-agent-cos:cos-agent microk8s:cos-agent -m mk8s
+juju relate grafana-agent-cos:cos-agent microk8s-gpu:cos-agent -m mk8s
 juju relate cos-loki:logging grafana-agent-cos:logging-consumer -m mk8s
 juju relate cos-prometheus:receive-remote-write grafana-agent-cos:send-remote-write -m mk8s
 juju relate cos-grafana:grafana-dashboard grafana-agent-cos:grafana-dashboards-provider -m mk8s
