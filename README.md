@@ -29,4 +29,51 @@
 
 ## Installation
 
-TBD
+### Create the jumphost
+
+Skip if you already have a jumphost or decide to use your local machine.
+
+For **AWS**, go to the aws-jumphost folder and use terraform:
+
+```bash
+cd ./aws-jumphost
+terraform init
+terraform apply
+```
+
+Export the public ip of the jumphost and SSH using defined key
+
+```bash
+export JUMPHOST_IP=$(terraform output -raw instance_public_ip)
+export PATH_TO_KEY=...
+
+ssh -i PATH_TO_KEY ubuntu@$JUMPHOST_IP
+```
+
+Install common packages for jumphost from project root directory
+
+```bash
+cd ./..
+bash jumphost-common.sh
+```
+
+### Juju cloud configuration
+
+Juju cloud credentials need to be configured separately for each of the clouds, more info can be found [here](https://juju.is/docs/juju/juju-add-credential)
+
+For **AWS**, configure the aws cloud config file based on [template](`./aws-jumphost/aws-credentials.tmp`) with your AWS IAM user credentails and add them to the cloud:
+
+```bash
+juju add-credential aws -f ./aws-jumphost/aws-credentials.yaml
+```
+
+### Deploy Kubernetes cluster
+
+
+
+
+
+
+
+
+## Cleanup
