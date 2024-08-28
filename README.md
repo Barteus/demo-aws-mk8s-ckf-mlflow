@@ -5,8 +5,7 @@
 - Split the jumphost.sh script into:
     ~~- general setup~~
     ~~- juju setup (AWS for now, later added other clouds)~~
-    - microk8s setup (gpu and nongpu nodes)
-    - remove jumphost.sh
+    ~~- microk8s setup (gpu and nongpu nodes)~~
 - Split apps.sh
     - COS integration
     - Opensearch
@@ -22,6 +21,7 @@
     - simple chat application with history
 
 **Enhancements**
+- remove jumphost.sh
 - use Embeddings service as KServe endpoint
 - multicloud:
     - juju cloud config
@@ -102,9 +102,17 @@ Save kubeconfig into the kube config default, if you do not use jumphost conside
 juju ssh microk8s/leader -- sudo microk8s config > ~/.kube/config
 ```
 
+Taint GPU nodes with PreferNoSchedule:
+```bash
+kubectl get nodes -l "nvidia.com/gpu.present=true" -o jsonpath='{.items[*].metadata.name}' | xargs -I{} kubectl taint nodes {} node-preference=gpu:PreferNoSchedule --overwrite
 
+```
 
+Optionally, install volcano scheduler if you need more advanced scheduling policies for your workloads.
 
+```bash
+kubectl apply -f https://raw.githubusercontent.com/volcano-sh/volcano/master/installer/volcano-development.yaml
+```
 
 
 
