@@ -1,0 +1,35 @@
+default-base: ubuntu@22.04/stable
+applications:
+  microk8s:
+    charm: microk8s
+    channel: 1.28/stable
+    num_units: 3
+    to:
+    - "0"
+    - "1"
+    - "2"
+    options:
+      hostpath_storage: true
+    constraints: arch=amd64 root-disk=102400 instance-type=t3.xlarge
+  microk8s-gpu:
+    charm: microk8s
+    channel: 1.28/stable
+    num_units: 1
+    to:
+    - "3"
+    options:
+      hostpath_storage: true
+      role: worker
+    constraints: arch=amd64 root-disk=102400 instance-type=g4dn.xlarge
+machines:
+  "0":
+    constraints: arch=amd64 root-disk=102400 instance-type=t3.xlarge
+  "1":
+    constraints: arch=amd64 root-disk=102400 instance-type=t3.xlarge
+  "2":
+    constraints: arch=amd64 root-disk=102400 instance-type=t3.xlarge
+  "3":
+    constraints: arch=amd64 root-disk=102400 instance-type=g4dn.xlarge
+relations:
+- - microk8s:workers
+  - microk8s-gpu:control-plane

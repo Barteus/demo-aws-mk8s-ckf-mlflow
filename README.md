@@ -1,11 +1,12 @@
 # Multicloud E2E RAG demo
 
 ## TODO
-- AWS cli command to create the jumphost
+~~- AWS cli command to create the jumphost~~
 - Split the jumphost.sh script into:
-    - general setup
-    - juju setup (AWS for now, later added other clouds)
+    ~~- general setup~~
+    ~~- juju setup (AWS for now, later added other clouds)~~
     - microk8s setup (gpu and nongpu nodes)
+    - remove jumphost.sh
 - Split apps.sh
     - COS integration
     - Opensearch
@@ -68,6 +69,39 @@ juju add-credential aws -f ./aws-jumphost/aws-credentials.yaml
 ```
 
 ### Deploy Kubernetes cluster
+
+Bootstrap juju controller
+
+```bash
+juju bootstrap aws/eu-west-1 aws-controller --bootstrap-constraints 'cores=2 mem=4G'
+```
+
+Deploy kubernetes cluster with Juju and Microk8s
+
+```bash
+juju add-model mk8s
+
+juju deploy ./k8s/k8s-bundle.yaml
+
+juju ssh microk8s/leader -- sudo microk8s status
+```
+
+We are using hostpath storage to eliminate the dependency on the external cloud. The root disk is 100GB to acomodate both Kubernetes hostpath storage and Docker Image caching.
+
+Configure additional microk8s plugins
+
+```bash
+juju ssh microk8s/leader -- sudo microk8s enable gpu ingress metallb:10.64.140.43-10.64.140.49
+
+juju expose microk8s
+```
+
+Save kubeconfig into the kube config default, if you do not use jumphost consider using different location.
+
+```bash
+juju ssh microk8s/leader -- sudo microk8s config > ~/.kube/config
+```
+
 
 
 
