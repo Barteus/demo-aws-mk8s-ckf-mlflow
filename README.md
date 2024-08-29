@@ -9,7 +9,7 @@
 - Split apps.sh
     ~~- COS integration~~
     - Opensearch
-    - CKF + MLflow
+    ~~- CKF + MLflow~~
 - Implement notebook which:
     - takes data from S3 
     - create embeddings 
@@ -79,7 +79,7 @@ juju bootstrap aws/eu-west-1 aws-controller --bootstrap-constraints 'cores=2 mem
 Deploy kubernetes cluster with Juju and Microk8s
 
 ```bash
-juju add-model mk8s
+juju add-model mk8s aws
 
 juju deploy ./k8s/k8s-bundle.yaml --model mk8s
 
@@ -170,7 +170,27 @@ juju deploy -m kubeflow --debug ./ckf/bundle.yaml \
 
 ### Deploy Opensearch
 
-TBD
+Create a new model and set cloudinit-userdata for it.
+
+```bash
+juju add-model os aws
+
+juju model-config --model os --file=./opensearch/cloudinit-userdata.yaml
+```
+
+Deploy Opensearch.
+
+```bash
+juju deploy ./opensearch/bundle.yaml
+```
+
+Ignore the error, or deploy Openstack in HA mode.
+
+Get the access information:
+
+```bash
+juju run data-integrator/leader get-credentials
+```
 
 
 ### Deploy ML models
@@ -232,6 +252,8 @@ echo IP: $(kubectl -n kubeflow get svc istio-ingressgateway-workload -o jsonpath
 echo User: $(juju config dex-auth static-username)
 echo Password $(juju config dex-auth static-password)
 ```
+
+
 
 
 

@@ -1,0 +1,7 @@
+cloudinit-userdata: |
+  postruncmd:
+    - [ 'echo', 'vm.max_map_count=262144', '>>', '/etc/sysctl.conf' ]
+    - [ 'echo', 'vm.swappiness=0', '>>', '/etc/sysctl.conf' ]
+    - [ 'echo', 'net.ipv4.tcp_retries2=5', '>>', '/etc/sysctl.conf' ]
+    - [ 'echo', 'fs.file-max=1048576', '>>', '/etc/sysctl.conf' ]
+    - [ 'sysctl', '-p' ]

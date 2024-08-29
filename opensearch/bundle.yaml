@@ -1,0 +1,38 @@
+default-base: ubuntu@22.04/stable
+applications:
+  data-integrator:
+    charm: data-integrator
+    channel: latest/stable
+    num_units: 1
+    to:
+    - "0"
+    options:
+      extra-user-roles: admin
+      index-name: test-index
+    constraints: arch=amd64
+  opensearch:
+    charm: opensearch
+    channel: 2/edge
+    num_units: 1
+    to:
+    - "0"
+    constraints: arch=amd64
+    storage:
+      opensearch-data: rootfs,1,1024M
+  self-signed-certificates:
+    charm: self-signed-certificates
+    channel: latest/stable
+    num_units: 1
+    to:
+    - "0"
+    options:
+      ca-common-name: Demo CA
+    constraints: arch=amd64
+machines:
+  "0":
+    constraints: arch=amd64
+relations:
+- - self-signed-certificates:certificates
+  - opensearch:certificates
+- - data-integrator:opensearch
+  - opensearch:opensearch-client
