@@ -7,7 +7,7 @@
     ~~- juju setup (AWS for now, later added other clouds)~~
     ~~- microk8s setup (gpu and nongpu nodes)~~
 - Split apps.sh
-    - COS integration
+    ~~- COS integration~~
     - Opensearch
     - CKF + MLflow
 - Implement notebook which:
@@ -28,7 +28,7 @@
     - jumphost create command
 - NVidia NIM as LLM & Embeddings
 
-## Installation
+## Infrastructure Installation
 
 ### Create the jumphost
 
@@ -81,9 +81,9 @@ Deploy kubernetes cluster with Juju and Microk8s
 ```bash
 juju add-model mk8s
 
-juju deploy ./k8s/k8s-bundle.yaml
+juju deploy ./k8s/k8s-bundle.yaml --model mk8s
 
-juju ssh microk8s/leader -- sudo microk8s status
+juju ssh -m mk8s microk8s/leader -- sudo microk8s status
 ```
 
 We are using hostpath storage to eliminate the dependency on the external cloud. The root disk is 100GB to acomodate both Kubernetes hostpath storage and Docker Image caching.
@@ -91,7 +91,7 @@ We are using hostpath storage to eliminate the dependency on the external cloud.
 Configure additional microk8s plugins
 
 ```bash
-juju ssh microk8s/leader -- sudo microk8s enable gpu ingress metallb:10.64.140.43-10.64.140.49
+juju ssh -m mk8s microk8s/leader -- sudo microk8s enable gpu ingress metallb:10.64.140.43-10.64.140.49
 
 juju expose microk8s
 ```
@@ -99,13 +99,13 @@ juju expose microk8s
 Save kubeconfig into the kube config default, if you do not use jumphost consider using different location.
 
 ```bash
-juju ssh microk8s/leader -- sudo microk8s config > ~/.kube/config
+juju ssh -m mk8s microk8s/leader -- sudo microk8s config > ~/.kube/config
 ```
 
 Taint GPU nodes with PreferNoSchedule:
 ```bash
-kubectl get nodes -l "nvidia.com/gpu.present=true" -o jsonpath='{.items[*].metadata.name}' | xargs -I{} kubectl taint nodes {} node-preference=gpu:PreferNoSchedule --overwrite
-
+kubectl get nodes -l "nvidia.com/gpu.present=true" -o jsonpath='{.items[*].metadata.name}' \
+    | xargs -I{} kubectl taint nodes {} node-preference=gpu:PreferNoSchedule --overwrite
 ```
 
 Optionally, install volcano scheduler if you need more advanced scheduling policies for your workloads.
@@ -114,7 +114,124 @@ Optionally, install volcano scheduler if you need more advanced scheduling polic
 kubectl apply -f https://raw.githubusercontent.com/volcano-sh/volcano/master/installer/volcano-development.yaml
 ```
 
+### Deploy COS
 
+Add deployed K8s as a cloud
+
+```bash
+juju add-k8s mk8s --cluster-name=microk8s-cluster --client --controller aws-controller
+```
+
+Deploy the Observability stack
+
+```bash
+juju add-model cos mk8s
+
+juju deploy cos-lite --model cos \
+  --trust \
+  --overlay ./cos/offers-overlay.yaml \
+  --overlay ./cos/storage-small-overlay.yaml
+```
+
+To access the COS, go to the section "Access the UIs"
+
+Add the self monitoring the deployed Kuberentes cluster
+
+```bash
+
+juju consume aws-controller:admin/cos.alertmanager-karma-dashboard cos-alertmanager -m mk8s
+juju consume aws-controller:admin/cos.grafana-dashboards cos-grafana -m mk8s
+juju consume aws-controller:admin/cos.loki-logging cos-loki -m mk8s
+juju consume aws-controller:admin/cos.prometheus-receive-remote-write cos-prometheus -m mk8s
+
+juju deploy grafana-agent grafana-agent-cos --channel latest/stable -m mk8s
+
+juju relate grafana-agent-cos:cos-agent microk8s:cos-agent -m mk8s
+juju relate grafana-agent-cos:cos-agent microk8s-gpu:cos-agent -m mk8s
+juju relate cos-loki:logging grafana-agent-cos:logging-consumer -m mk8s
+juju relate cos-prometheus:receive-remote-write grafana-agent-cos:send-remote-write -m mk8s
+juju relate cos-grafana:grafana-dashboard grafana-agent-cos:grafana-dashboards-provider -m mk8s
+
+```
+
+### Deploy Kubeflow and MLflow
+
+Deploy Kubeflow, MLflow and integrate with COS
+
+```bash
+juju add-model kubeflow mk8s
+
+juju deploy -m kubeflow --debug ./ckf/bundle.yaml \
+    --overlay ./ckf/authentication-overlay.yaml \
+    --overlay ./ckf/cos-integration.yaml \
+    --overlay ./ckf/mlflow-integration.yaml \
+    --trust
+```
+
+### Deploy Opensearch
+
+TBD
+
+
+### Deploy ML models
+
+TBD
+
+### Deploy Chat UI
+
+TBD
+
+## Access the UIs
+TBD:
+- Opensearch Dashboard
+
+### Kubeflow, MLflow & COS
+For the security purposes we do not expose the "Public IPs" publicly. 
+
+First, add you public key to the Kuberentes leader node. I will use my launchpad ID, you can also add your public key directly to the ~/.ssh/authorized_keys on the remote host.
+
+```bash
+juju ssh -m mk8s microk8s/leader -- ssh-import-id barteus
+```
+
+Next step is expose them to your computer via sshuttle. Use new terminal window on your local computer. You will need root access to your computer, because sshuttle will add additional entries to your IP tables.
+
+On the jumphost run:
+
+```shell
+MK8S_LEADER_IP=$(juju status -m mk8s microk8s/leader --format json | jq -r '.machines[] | .["dns-name"]')
+echo $MK8S_LEADER_IP
+```
+
+On your local computer in new terminal run:
+
+```bash
+shuttle -r ubuntu@$MK8S_LEADER_IP 10.0.0.0/8
+```
+
+Get the IP of the COS entrypoint. In the catalog you can find links to other services.
+
+```bash
+juju run -m cos traefik/0 show-proxied-endpoints --format=yaml --model cos \
+  | yq '."traefik/0".results."proxied-endpoints"' \
+  | jq
+```
+
+**Grafana** admin user details can be extracted using Juju action:
+
+```bash
+echo Grafana access
+juju run grafana/leader get-admin-password --model cos
+```
+
+Kubeflow access to the UI:
+
+```bash
+echo Kubeflow access
+echo IP: $(kubectl -n kubeflow get svc istio-ingressgateway-workload -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+echo User: $(juju config dex-auth static-username)
+echo Password $(juju config dex-auth static-password)
+```
 
 
 

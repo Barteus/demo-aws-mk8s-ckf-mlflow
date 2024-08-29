@@ -8,7 +8,7 @@ applications:
     _github_repo_name: mysql-k8s-operator
   mlflow-server:
     charm: mlflow-server
-    channel: 2.1/stable
+    channel: 2.15/stable
     scale: 1
     trust: true
     _github_repo_name: mlflow-operator
@@ -16,7 +16,7 @@ applications:
       enable_mlflow_nodeport: false
   resource-dispatcher:
     charm: resource-dispatcher
-    channel: 1.0/stable
+    channel: 2.0/stable
     scale: 1
     trust: true
 relations:

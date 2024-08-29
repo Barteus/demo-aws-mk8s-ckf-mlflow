@@ -11,7 +11,7 @@ saas:
 applications:
   grafana-agent-k8s:
     charm: grafana-agent-k8s
-    channel: latest/edge
+    channel: latest/stable
     scale: 1
     storage:
       data: kubernetes,1,1024M
@@ -21,7 +21,6 @@ relations:
 
 #dashboards
 - [ jupyter-controller:grafana-dashboard, grafana-dashboards ]
-- [ seldon-controller-manager:grafana-dashboard, grafana-dashboards ]
 - [ argo-controller:grafana-dashboard, grafana-dashboards ]
 - [ dex-auth:grafana-dashboard, grafana-dashboards ]
 - [ katib-controller:grafana-dashboard, grafana-dashboards ]
@@ -35,7 +34,6 @@ relations:
 
 #metrics
 - [grafana-agent-k8s:metrics-endpoint, jupyter-controller:metrics-endpoint]
-- [grafana-agent-k8s:metrics-endpoint, seldon-controller-manager:metrics-endpoint]
 - [grafana-agent-k8s:metrics-endpoint, argo-controller:metrics-endpoint]
 - [grafana-agent-k8s:metrics-endpoint, dex-auth:metrics-endpoint]
 - [grafana-agent-k8s:metrics-endpoint, katib-controller:metrics-endpoint]

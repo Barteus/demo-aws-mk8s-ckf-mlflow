@@ -1,8 +1,0 @@
----
-applications:
-  dex-auth:
-    options:
-      public-url: http://10.64.140.44.nip.io
-  oidc-gatekeeper:
-    options:
-      public-url: http://10.64.140.44.nip.io
