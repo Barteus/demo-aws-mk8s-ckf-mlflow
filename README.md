@@ -184,12 +184,33 @@ Deploy Opensearch.
 juju deploy ./opensearch/bundle.yaml
 ```
 
-Ignore the error, or deploy Openstack in HA mode.
+Ignore the error, or deploy Opensearch in HA mode.
 
 Get the access information:
 
 ```bash
-juju run data-integrator/leader get-credentials
+# juju run data-integrator/leader get-credentials > ./opensearch/os-creds.yaml
+juju run opensearch/leader get-password > ./opensearch/os-creds.yaml
+
+# export OS_IP=$(cat ./opensearch/os-creds.yaml | yq -C ".opensearch.endpoints")
+export OS_IP=$(juju status -m os opensearch/leader --format json | jq -r '.machines[] | .["dns-name"]'):9200
+echo Endpoints: $OS_IP
+
+export OS_USERNAME=$(cat ./opensearch/os-creds.yaml | yq -C ".username")
+# export OS_USERNAME=$(cat ./opensearch/os-creds.yaml | yq -C ".opensearch.username")
+echo Username: $OS_USERNAME
+
+export OS_PASSWORD=$(cat ./opensearch/os-creds.yaml | yq -C ".password")
+# export OS_PASSWORD=$(cat ./opensearch/os-creds.yaml | yq -C ".opensearch.password")
+echo Password: $OS_PASSWORD
+
+cat ./opensearch/os-creds.yaml | yq -C ".ca-chain" | tee ./openstack/os-cert.yaml
+echo Certificate saved under ./openstack/os-cert.yaml
+```
+
+Connect using curl:
+```bash
+curl --cacert ./opensearch/os-cert.yaml -XGET https://$OS_USERNAME:$OS_PASSWORD@$OS_IP/
 ```
 
 
@@ -258,3 +279,14 @@ echo Password $(juju config dex-auth static-password)
 
 
 ## Cleanup
+
+Remove in the AWS cloud console:
+- machines
+- security groups
+
+Remove configuration on the jumphost.
+
+```bash
+rm -Rf ~/.local/share/juju/
+```
+

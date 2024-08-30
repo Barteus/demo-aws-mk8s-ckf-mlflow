@@ -1,3 +1,4 @@
 
 #credential files
 aws-jumphost/aws-credentials.yaml
+opensearch/os-*.yaml
