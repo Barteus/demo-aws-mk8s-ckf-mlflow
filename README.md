@@ -1,27 +1,19 @@
 # Multicloud E2E RAG demo
 
 ## TODO
-~~- AWS cli command to create the jumphost~~
-~~- Split the jumphost.sh script into:~~
-    ~~- general setup~~
-    ~~- juju setup (AWS for now, later added other clouds)~~
-    ~~- microk8s setup (gpu and nongpu nodes)~~
-~~- Split apps.sh~~
-    ~~- COS integration~~
-    - Opensearch
-    ~~- CKF + MLflow~~
 - Implement notebook which:
-    - takes data from S3 
+    - takes data from S3 (creates if does not exist)
     - create embeddings 
     - stores values in Opensearch 
 - Create a pipeline from notebook, add:
-    - 3 steps - download, create/recreate index, create embeddings, save in opensearch
+    - 3 steps - create DB, download, create/recreate index, create embeddings, save in opensearch
 - Deploy the LLM using vLLM & KServe
 - Create Chat UI using embedder & KServe endpoint
     - simple chat application with history
 
 **Enhancements**
-- remove jumphost.sh
+- remove jumphost.sh & apps.sh
+- Add Opensearch COS monitoring
 - use Embeddings service as KServe endpoint
 - multicloud:
     - juju cloud config
