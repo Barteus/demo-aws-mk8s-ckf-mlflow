@@ -2,11 +2,11 @@
 
 ## TODO
 ~~- AWS cli command to create the jumphost~~
-- Split the jumphost.sh script into:
+~~- Split the jumphost.sh script into:~~
     ~~- general setup~~
     ~~- juju setup (AWS for now, later added other clouds)~~
     ~~- microk8s setup (gpu and nongpu nodes)~~
-- Split apps.sh
+~~- Split apps.sh~~
     ~~- COS integration~~
     - Opensearch
     ~~- CKF + MLflow~~
@@ -138,7 +138,6 @@ To access the COS, go to the section "Access the UIs"
 Add the self monitoring the deployed Kuberentes cluster
 
 ```bash
-
 juju consume aws-controller:admin/cos.alertmanager-karma-dashboard cos-alertmanager -m mk8s
 juju consume aws-controller:admin/cos.grafana-dashboards cos-grafana -m mk8s
 juju consume aws-controller:admin/cos.loki-logging cos-loki -m mk8s
@@ -147,11 +146,10 @@ juju consume aws-controller:admin/cos.prometheus-receive-remote-write cos-promet
 juju deploy grafana-agent grafana-agent-cos --channel latest/stable -m mk8s
 
 juju relate grafana-agent-cos:cos-agent microk8s:cos-agent -m mk8s
-juju relate grafana-agent-cos:cos-agent microk8s-gpu:cos-agent -m mk8s
+#juju relate grafana-agent-cos:cos-agent microk8s-gpu:cos-agent -m mk8s
 juju relate cos-loki:logging grafana-agent-cos:logging-consumer -m mk8s
 juju relate cos-prometheus:receive-remote-write grafana-agent-cos:send-remote-write -m mk8s
 juju relate cos-grafana:grafana-dashboard grafana-agent-cos:grafana-dashboards-provider -m mk8s
-
 ```
 
 ### Deploy Kubeflow and MLflow
@@ -184,9 +182,9 @@ Deploy Opensearch.
 juju deploy ./opensearch/bundle.yaml
 ```
 
-Ignore the error, or deploy Opensearch in HA mode.
+Ignore the error with replicas, or deploy Opensearch in HA mode.
 
-Get the access information:
+When deployment is GREEN, get the access information:
 
 ```bash
 # juju run data-integrator/leader get-credentials > ./opensearch/os-creds.yaml
@@ -204,15 +202,14 @@ export OS_PASSWORD=$(cat ./opensearch/os-creds.yaml | yq -C ".password")
 # export OS_PASSWORD=$(cat ./opensearch/os-creds.yaml | yq -C ".opensearch.password")
 echo Password: $OS_PASSWORD
 
-cat ./opensearch/os-creds.yaml | yq -C ".ca-chain" | tee ./openstack/os-cert.yaml
-echo Certificate saved under ./openstack/os-cert.yaml
+cat ./opensearch/os-creds.yaml | yq -C ".ca-chain" | tee ./opensearch/os-cert.yaml
+echo Certificate saved under ./opensearch/os-cert.yaml
 ```
 
 Connect using curl:
 ```bash
 curl --cacert ./opensearch/os-cert.yaml -XGET https://$OS_USERNAME:$OS_PASSWORD@$OS_IP/
 ```
-
 
 ### Deploy ML models
 
@@ -223,8 +220,6 @@ TBD
 TBD
 
 ## Access the UIs
-TBD:
-- Opensearch Dashboard
 
 ### Kubeflow, MLflow & COS
 For the security purposes we do not expose the "Public IPs" publicly. 
@@ -247,7 +242,7 @@ echo $MK8S_LEADER_IP
 On your local computer in new terminal run:
 
 ```bash
-shuttle -r ubuntu@$MK8S_LEADER_IP 10.0.0.0/8
+shuttle -r ubuntu@$MK8S_LEADER_IP 10.0.0.0/8 172.31.0.0/16
 ```
 
 Get the IP of the COS entrypoint. In the catalog you can find links to other services.
@@ -273,10 +268,6 @@ echo IP: $(kubectl -n kubeflow get svc istio-ingressgateway-workload -o jsonpath
 echo User: $(juju config dex-auth static-username)
 echo Password $(juju config dex-auth static-password)
 ```
-
-
-
-
 
 ## Cleanup
 
