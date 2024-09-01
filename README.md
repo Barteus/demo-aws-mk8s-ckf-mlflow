@@ -158,6 +158,10 @@ juju deploy -m kubeflow --debug ./ckf/bundle.yaml \
     --trust
 ```
 
+Log into the UI for the first time using credentials:
+User: admin
+Password: admin
+
 ### Deploy Opensearch
 
 Create a new model and set cloudinit-userdata for it.
@@ -183,8 +187,10 @@ When deployment is GREEN, get the access information:
 juju run opensearch/leader get-password > ./opensearch/os-creds.yaml
 
 # export OS_IP=$(cat ./opensearch/os-creds.yaml | yq -C ".opensearch.endpoints")
-export OS_IP=$(juju status -m os opensearch/leader --format json | jq -r '.machines[] | .["dns-name"]'):9200
-echo Endpoints: $OS_IP
+export OS_IP=$(juju status -m os opensearch/leader --format json | jq -r '.machines[] | .["dns-name"]')
+export OS_PORT=9200
+echo Endpoints: $OS_IP:$OS_PORT
+
 
 export OS_USERNAME=$(cat ./opensearch/os-creds.yaml | yq -C ".username")
 # export OS_USERNAME=$(cat ./opensearch/os-creds.yaml | yq -C ".opensearch.username")
@@ -198,10 +204,24 @@ cat ./opensearch/os-creds.yaml | yq -C ".ca-chain" | tee ./opensearch/os-cert.ya
 echo Certificate saved under ./opensearch/os-cert.yaml
 ```
 
-Connect using curl:
+Connect using curl to check connectivity:
 ```bash
-curl --cacert ./opensearch/os-cert.yaml -XGET https://$OS_USERNAME:$OS_PASSWORD@$OS_IP/
+curl -k --cacert ./opensearch/os-cert.yaml -XGET https://$OS_USERNAME:$OS_PASSWORD@$OS_IP/
 ```
+
+Create Opensearch secret and PodDefaults in the "admin" user namespace in Kubeflow. This requires that you log into the Kubeflow for the first time before running the script below.
+
+```bash
+sh ./opensearch/os-pod-default.sh
+```
+
+### Configure Object storage Bucket and Opensearch Index
+
+Go to the Kubeflow and create a Kubeflow Notebook with all PodDefaults enabled.
+
+In the Kubeflow notebook run:
+- setup-bucket.ipynb
+- setup-opensearch.ipynb
 
 ### Deploy ML models
 
