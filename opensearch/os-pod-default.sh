@@ -6,10 +6,10 @@ metadata:
   name: opensearch-secret
 type: Opaque
 stringData:
-  host: $OS_IP
-  port: $OS_PORT
-  username: $OS_USERNAME
-  password: $OS_PASSWORD
+  host: "$OS_IP"
+  port: "$OS_PORT"
+  username: "$OS_USERNAME"
+  password: "$OS_PASSWORD"
 ---
 apiVersion: kubeflow.org/v1alpha1
 kind: PodDefault

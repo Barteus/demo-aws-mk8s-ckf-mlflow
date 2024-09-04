@@ -32,6 +32,6 @@ relations:
 
 #COS integration
 - [mlflow-server, grafana-dashboards]
-- [mlflow-mysql, grafana-dashboards]
+# - [mlflow-mysql, grafana-dashboards]
 - [grafana-agent-k8s:metrics-endpoint, mlflow-server:metrics-endpoint]
-- [grafana-agent-k8s:metrics-endpoint, mlflow-mysql:metrics-endpoint]
+# - [grafana-agent-k8s:metrics-endpoint, mlflow-mysql:metrics-endpoint]
