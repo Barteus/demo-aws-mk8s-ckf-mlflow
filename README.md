@@ -182,6 +182,7 @@ juju run -m cos traefik/0 show-proxied-endpoints --format=yaml --model cos \
 ```bash
 echo Grafana access
 juju run grafana/leader get-admin-password --model cos
+```
 
 ### Deploy Kubeflow and MLflow
 
