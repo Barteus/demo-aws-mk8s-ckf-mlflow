@@ -1,12 +1,6 @@
 # Multicloud E2E RAG demo
 
 ## TODO
-- Implement notebook which:
-    - takes data from S3 (creates if does not exist)
-    - create embeddings 
-    - stores values in Opensearch 
-- Create a pipeline from notebook, add:
-    - 3 steps - create DB, download, create/recreate index, create embeddings, save in opensearch
 - Deploy the LLM using vLLM & KServe
 - Create Chat UI using embedder & KServe endpoint
     - simple chat application with history
@@ -182,7 +176,6 @@ juju run -m cos traefik/0 show-proxied-endpoints --format=yaml --model cos \
 ```bash
 echo Grafana access
 juju run grafana/leader get-admin-password --model cos
-```
 
 ### Deploy Kubeflow and MLflow
 
@@ -254,9 +247,9 @@ sh ./opensearch/os-pod-default.sh
 
 Go to the Kubeflow and create a Kubeflow Notebook with all PodDefaults enabled.
 
-In the Kubeflow notebook run:
-- setup-bucket.ipynb
-- setup-opensearch.ipynb
+In the Kubeflow notebook run setup-bucket.ipynb to create bucket and upload all files in the documents folder to it.
+
+Run Ingestion pipeline notebook or create a Kubeflow pipeline using ingestion-pipelines.yaml file.
 
 ### Deploy ML models
 
@@ -276,5 +269,15 @@ Remove configuration on the jumphost.
 
 ```bash
 rm -Rf ~/.local/share/juju/
+```
+
+### Manual cleanup of Argo Workflows completed pods:
+
+Without removing completed Pods the PVCs will not be removed even if stated in the pipeline definition. 
+
+Run it only when no Pipeline Run is executed.
+
+```bash
+kubectl delete po -n admin -l workflows.argoproj.io/completed=true
 ```
 
