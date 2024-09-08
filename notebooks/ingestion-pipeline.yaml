@@ -1,0 +1,558 @@
+# PIPELINE DEFINITION
+# Name: ingestion-pipeline
+# Description: Ingest data from S3 to OpenSearch
+# Inputs:
+#    rag_index_force_recreate: bool [Default: True]
+#    rag_index_name: str [Default: 'rag_index']
+components:
+  comp-createpvc:
+    executorLabel: exec-createpvc
+    inputDefinitions:
+      parameters:
+        access_modes:
+          description: 'AccessModes to request for the provisioned PVC. May
+
+            be one or more of ``''ReadWriteOnce''``, ``''ReadOnlyMany''``, ``''ReadWriteMany''``,
+            or
+
+            ``''ReadWriteOncePod''``. Corresponds to `PersistentVolumeClaim.spec.accessModes
+            <https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes>`_.'
+          parameterType: LIST
+        annotations:
+          description: Annotations for the PVC's metadata. Corresponds to `PersistentVolumeClaim.metadata.annotations
+            <https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#PersistentVolumeClaim>`_.
+          isOptional: true
+          parameterType: STRUCT
+        pvc_name:
+          description: 'Name of the PVC. Corresponds to `PersistentVolumeClaim.metadata.name
+            <https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#PersistentVolumeClaim>`_.
+            Only one of ``pvc_name`` and ``pvc_name_suffix`` can
+
+            be provided.'
+          isOptional: true
+          parameterType: STRING
+        pvc_name_suffix:
+          description: 'Prefix to use for a dynamically generated name, which
+
+            will take the form ``<argo-workflow-name>-<pvc_name_suffix>``. Only one
+
+            of ``pvc_name`` and ``pvc_name_suffix`` can be provided.'
+          isOptional: true
+          parameterType: STRING
+        size:
+          description: The size of storage requested by the PVC that will be provisioned.
+            For example, ``'5Gi'``. Corresponds to `PersistentVolumeClaim.spec.resources.requests.storage
+            <https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#PersistentVolumeClaimSpec>`_.
+          parameterType: STRING
+        storage_class_name:
+          defaultValue: ''
+          description: 'Name of StorageClass from which to provision the PV
+
+            to back the PVC. ``None`` indicates to use the cluster''s default
+
+            storage_class_name. Set to ``''''`` for a statically specified PVC.'
+          isOptional: true
+          parameterType: STRING
+        volume_name:
+          description: 'Pre-existing PersistentVolume that should back the
+
+            provisioned PersistentVolumeClaim. Used for statically
+
+            specified PV only. Corresponds to `PersistentVolumeClaim.spec.volumeName
+            <https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/persistent-volume-claim-v1/#PersistentVolumeClaimSpec>`_.'
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        name:
+          parameterType: STRING
+  comp-deletepvc:
+    executorLabel: exec-deletepvc
+    inputDefinitions:
+      parameters:
+        pvc_name:
+          description: Name of the PVC to delete. Supports passing a runtime-generated
+            name, such as a name provided by ``kubernetes.CreatePvcOp().outputs['name']``.
+          parameterType: STRING
+  comp-download-data:
+    executorLabel: exec-download-data
+    inputDefinitions:
+      parameters:
+        bucket_name:
+          defaultValue: rag-demo-source
+          isOptional: true
+          parameterType: STRING
+        data_folder:
+          defaultValue: raw
+          isOptional: true
+          parameterType: STRING
+        data_mount_point:
+          defaultValue: /data
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-ingest-os:
+    executorLabel: exec-ingest-os
+    inputDefinitions:
+      parameters:
+        batch_size:
+          defaultValue: 10.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        chunk_overlap:
+          defaultValue: 50.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        chunk_size:
+          defaultValue: 500.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        data_mount_point:
+          defaultValue: /data
+          isOptional: true
+          parameterType: STRING
+        data_source_folder:
+          parameterType: STRING
+        embeddings_model_name:
+          defaultValue: sentence-transformers/all-MiniLM-L6-v2
+          isOptional: true
+          parameterType: STRING
+        index_name:
+          parameterType: STRING
+        use_gpu:
+          defaultValue: false
+          isOptional: true
+          parameterType: BOOLEAN
+  comp-remove-unsupported-files:
+    executorLabel: exec-remove-unsupported-files
+    inputDefinitions:
+      parameters:
+        data_mount_point:
+          defaultValue: /data
+          isOptional: true
+          parameterType: STRING
+        data_source_folder:
+          parameterType: STRING
+        data_target_folder:
+          defaultValue: cleaned
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-setup-os:
+    executorLabel: exec-setup-os
+    inputDefinitions:
+      parameters:
+        force_recreate:
+          defaultValue: true
+          isOptional: true
+          parameterType: BOOLEAN
+        rag_index_name:
+          defaultValue: rag_index
+          isOptional: true
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-createpvc:
+      container:
+        image: argostub/createpvc
+    exec-deletepvc:
+      container:
+        image: argostub/deletepvc
+    exec-download-data:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - download_data
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'minio<7.0'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef download_data(bucket_name: str = \"rag-demo-source\", data_mount_point:\
+          \ str = \"/data\", data_folder: str = \"raw\") -> str:\n    import os\n\n\
+          \    from minio import Minio\n    from minio.error import BucketAlreadyOwnedByYou,\
+          \ NoSuchKey\n\n    # Initialize a MinIO client\n    mc = Minio(\n      \
+          \  endpoint=os.environ[\"MINIO_ENDPOINT_URL\"].split(\"http://\")[1],\n\
+          \        access_key=os.environ[\"AWS_ACCESS_KEY_ID\"],\n        secret_key=os.environ[\"\
+          AWS_SECRET_ACCESS_KEY\"],\n        secure=False,\n    )\n\n    objects =\
+          \ mc.list_objects(bucket_name)\n    for obj in objects:\n        mc.fget_object(bucket_name,\
+          \ obj.object_name, f\"{data_mount_point}/{data_folder}/{obj.object_name}\"\
+          )\n        print(\"\\t\", \"Downloaded\", obj.object_name)\n\n    return\
+          \ data_folder\n\n"
+        env:
+        - name: MINIO_ENDPOINT_URL
+          value: http://minio.kubeflow:9000
+        image: python:3.11
+    exec-ingest-os:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - ingest_os
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef ingest_os(\n    index_name:str, \n    data_source_folder:str,\
+          \ \n    data_mount_point: str = \"/data\",\n    use_gpu:bool = False,\n\
+          \    chunk_size:int = 500,\n    chunk_overlap:int = 50,\n    batch_size:int\
+          \ = 10,\n    embeddings_model_name:str = \"sentence-transformers/all-MiniLM-L6-v2\"\
+          ,\n):\n\n    from langchain.document_loaders import (\n        CSVLoader,\n\
+          \        EverNoteLoader,\n        PyMuPDFLoader,\n        TextLoader,\n\
+          \        UnstructuredEmailLoader,\n        UnstructuredEPubLoader,\n   \
+          \     UnstructuredHTMLLoader,\n        UnstructuredMarkdownLoader,\n   \
+          \     UnstructuredODTLoader,\n        UnstructuredPowerPointLoader,\n  \
+          \      UnstructuredWordDocumentLoader,\n    )\n    from langchain.docstore.document\
+          \ import Document\n    from langchain.text_splitter import RecursiveCharacterTextSplitter\n\
+          \n    from langchain.embeddings import HuggingFaceEmbeddings\n    from langchain.vectorstores\
+          \ import OpenSearchVectorSearch\n\n    from opensearchpy import OpenSearch\n\
+          \n    import os\n    import glob\n\n\n    # Map file extensions to document\
+          \ loaders and their arguments\n    LOADER_MAPPING = {\n        \".csv\"\
+          : (CSVLoader, {}),\n        \".doc\": (UnstructuredWordDocumentLoader, {}),\n\
+          \        \".docx\": (UnstructuredWordDocumentLoader, {}),\n        \".enex\"\
+          : (EverNoteLoader, {}),\n        \".epub\": (UnstructuredEPubLoader, {}),\n\
+          \        \".html\": (UnstructuredHTMLLoader, {}),\n        \".md\": (UnstructuredMarkdownLoader,\
+          \ {}),\n        \".odt\": (UnstructuredODTLoader, {}),\n        \".pdf\"\
+          : (PyMuPDFLoader, {}),\n        \".ppt\": (UnstructuredPowerPointLoader,\
+          \ {}),\n        \".pptx\": (UnstructuredPowerPointLoader, {}),\n       \
+          \ \".txt\": (TextLoader, {\"encoding\": \"utf8\"}),\n        # Add more\
+          \ mappings for other file extensions and loaders as needed\n    }\n\n  \
+          \  def load_single_document(file_path: str) -> List[Document]:  \n     \
+          \   ext = \".\" + file_path.rsplit(\".\", 1)[-1]\n        if ext in LOADER_MAPPING:\n\
+          \            loader_class, loader_args = LOADER_MAPPING[ext]\n         \
+          \   loader = loader_class(file_path, **loader_args)\n            return\
+          \ loader.load()\n\n        raise ValueError(f\"Unsupported file extension\
+          \ '{ext}'\")\n\n    files = []\n    for ext in LOADER_MAPPING:\n       \
+          \ files.extend(glob.glob(f\"{data_mount_point}/{data_source_folder}/*{ext}\"\
+          , recursive=True))\n\n    files_len = len(files)\n    docs = []\n    count\
+          \ = 0\n    for f in files:\n        count+=1\n        print(f\"Processing\
+          \ file {f}, {count}/{files_len}\")\n        docs.extend(load_single_document(f))\n\
+          \n\n    if not docs:\n        print(\"No new documents to load\")\n    \
+          \    exit(0)\n\n    print(f\"Loaded {len(docs)} new documents\")\n    text_splitter\
+          \ = RecursiveCharacterTextSplitter(\n        chunk_size=chunk_size, chunk_overlap=chunk_overlap\n\
+          \    )  \n    texts = text_splitter.split_documents(docs)\n    print(f\"\
+          Split into {len(texts)} chunks of text (max. {chunk_size} tokens each)\"\
+          )\n\n    hfe = HuggingFaceEmbeddings(\n        model_name=embeddings_model_name,\n\
+          \        model_kwargs={\"device\": \"cuda\" if use_gpu else \"cpu\"},\n\
+          \    )\n\n    host = os.environ['OPENSEARCH_HOST']\n    port = os.environ['OPENSEARCH_PORT']\n\
+          \    auth = (\n        os.environ['OPENSEARCH_USER'],\n        os.environ['OPENSEARCH_PASSWORD']\n\
+          \    ) \n\n    opensearch_vector_search = OpenSearchVectorSearch(\n    \
+          \    opensearch_url = f\"https://{host}:{port}\",\n        index_name =\
+          \ index_name,\n        embedding_function = hfe,\n        http_auth = auth,\n\
+          \        verify_certs = False,\n        ssl_assert_hostname = False,\n \
+          \       ssl_show_warn = False\n    )\n\n    texts_len = len(texts)\n   \
+          \ for i in range(0, texts_len, batch_size):\n        batch = texts[i:i +\
+          \ batch_size]\n        print(f\"Processing batch {int(i/batch_size)}/{int(texts_len/batch_size)}\"\
+          )\n        opensearch_vector_search.add_texts(\n            texts=[t.page_content\
+          \ for t in batch],\n            ids=[f\"{t.metadata.get('ID')}_{hash(t.page_content)}\"\
+          \ for t in batch],\n            metadatas=[t.metadata for t in batch],\n\
+          \            bulk_size=batch_size\n        )\n\n"
+        image: bponieckiklotz/kfp-steps:ingestion-os
+    exec-remove-unsupported-files:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - remove_unsupported_files
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef remove_unsupported_files(data_source_folder:str, data_mount_point:\
+          \ str = \"/data\", data_target_folder:str = \"cleaned\") -> str:\n    import\
+          \ os\n    import shutil\n\n    SUPPORTED_FORMATS = {\".csv\", \".doc\",\
+          \ \".docx\", \".enex\", \".epub\", \".html\", \".md\", \".odt\", \".pdf\"\
+          , \".ppt\", \".pptx\", \".txt\",}\n    source_folder = f\"{data_mount_point}/{data_source_folder}\"\
+          \n    target_folder = f\"{data_mount_point}/{data_target_folder}\"\n\n \
+          \   os.makedirs(os.path.join(data_mount_point, data_target_folder), exist_ok=True)\n\
+          \n    print(os.listdir(source_folder))\n    print(os.listdir(data_mount_point))\n\
+          \n    for f in os.listdir(source_folder):\n        _, ext = os.path.splitext(f)\n\
+          \        if ext in SUPPORTED_FORMATS:\n            shutil.copy2(f\"{source_folder}/{f}\"\
+          , f\"{target_folder}/{f}\")\n            print(\"Copied file to :\", f\"\
+          {target_folder}/{f}\")\n\n    return data_target_folder\n\n"
+        image: python:3.11
+    exec-setup-os:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - setup_os
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.7.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'opensearch-py==2.7.1'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef setup_os(rag_index_name:str = \"rag_index\", force_recreate:\
+          \ bool = True):\n    import os\n    from opensearchpy import OpenSearch\n\
+          \n    def delete_opensearch_index(opensearch_client, index_name):\n    \
+          \    print(f\"Trying to delete index {index_name}\")\n        try:\n   \
+          \         response = opensearch_client.indices.delete(index=index_name)\n\
+          \            print(f\"Index {index_name} deleted\")\n            return\
+          \ response['acknowledged']\n        except Exception as e:\n           \
+          \ print(f\"Index {index_name} not found, nothing to delete\")\n        \
+          \    return True\n\n    def create_index(opensearch_client, index_name):\n\
+          \        settings = {\n            \"settings\": {\n                \"index\"\
+          : {\n                    \"knn\": True\n                    }\n        \
+          \        }\n            }\n        response = opensearch_client.indices.create(index=index_name,\
+          \ body=settings)\n        return bool(response['acknowledged'])\n\n    def\
+          \ create_index_mapping(opensearch_client, index_name):\n        response\
+          \ = opensearch_client.indices.put_mapping(\n            index=index_name,\n\
+          \            body={\n                \"properties\": {\n               \
+          \     \"vector_field\": {\n                        \"type\": \"knn_vector\"\
+          ,\n                        \"dimension\": 384\n                    },\n\
+          \                    \"text\": {\n                        \"type\": \"keyword\"\
+          \n                    }\n                }\n            }\n        )\n \
+          \       return bool(response['acknowledged'])\n\n    host = os.environ['OPENSEARCH_HOST']\n\
+          \    port = os.environ['OPENSEARCH_PORT']\n    auth = (\n        os.environ['OPENSEARCH_USER'],\n\
+          \        os.environ['OPENSEARCH_PASSWORD']\n    ) \n\n    client = OpenSearch(\n\
+          \        hosts = [{'host': host, 'port': port}],\n        http_compress\
+          \ = True, \n        http_auth = auth,\n        use_ssl = True,\n       \
+          \ verify_certs = False,\n        ssl_assert_hostname = False,\n        ssl_show_warn\
+          \ = False\n    )\n\n    if force_recreate:\n        delete_opensearch_index(client,\
+          \ rag_index_name)\n\n    index_exists = client.indices.exists(index=rag_index_name)\n\
+          \n    if not index_exists:\n        print(\"Creating OpenSearch index\"\
+          )\n        index_created = create_index(client, rag_index_name)\n      \
+          \  if index_created:\n            print(\"Creating OpenSearch index mapping\"\
+          )\n            success = create_index_mapping(client, rag_index_name)\n\
+          \            print(f\"OpenSearch Index mapping created\")\n    else:\n \
+          \       print(\"Opensearch index already exists\")\n\n"
+        image: python:3.11
+pipelineInfo:
+  description: Ingest data from S3 to OpenSearch
+  name: ingestion-pipeline
+root:
+  dag:
+    tasks:
+      createpvc:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-createpvc
+        inputs:
+          parameters:
+            access_modes:
+              runtimeValue:
+                constant:
+                - ReadWriteMany
+            pvc_name_suffix:
+              runtimeValue:
+                constant: -data-ingestion
+            size:
+              runtimeValue:
+                constant: 1Gi
+            storage_class_name:
+              runtimeValue:
+                constant: microk8s-hostpath
+        taskInfo:
+          name: Create PVC
+      deletepvc:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-deletepvc
+        dependentTasks:
+        - createpvc
+        - ingest-os
+        inputs:
+          parameters:
+            pvc_name:
+              taskOutputParameter:
+                outputParameterKey: name
+                producerTask: createpvc
+        taskInfo:
+          name: Destroy PVC
+      download-data:
+        cachingOptions: {}
+        componentRef:
+          name: comp-download-data
+        dependentTasks:
+        - createpvc
+        - setup-os
+        inputs:
+          parameters:
+            bucket_name:
+              runtimeValue:
+                constant: rag-demo-source
+        taskInfo:
+          name: Download data from S3
+      ingest-os:
+        cachingOptions: {}
+        componentRef:
+          name: comp-ingest-os
+        dependentTasks:
+        - createpvc
+        - remove-unsupported-files
+        inputs:
+          parameters:
+            data_source_folder:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: remove-unsupported-files
+            index_name:
+              componentInputParameter: rag_index_name
+        taskInfo:
+          name: Save embeddings into the OpenSearch
+      remove-unsupported-files:
+        cachingOptions: {}
+        componentRef:
+          name: comp-remove-unsupported-files
+        dependentTasks:
+        - createpvc
+        - download-data
+        inputs:
+          parameters:
+            data_source_folder:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: download-data
+        taskInfo:
+          name: Remove files with unsupported formats
+      setup-os:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-setup-os
+        inputs:
+          parameters:
+            force_recreate:
+              componentInputParameter: rag_index_force_recreate
+            rag_index_name:
+              componentInputParameter: rag_index_name
+        taskInfo:
+          name: Configure OpenSearch
+  inputDefinitions:
+    parameters:
+      rag_index_force_recreate:
+        defaultValue: true
+        isOptional: true
+        parameterType: BOOLEAN
+      rag_index_name:
+        defaultValue: rag_index
+        isOptional: true
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.7.0
+---
+platforms:
+  kubernetes:
+    deploymentSpec:
+      executors:
+        exec-download-data:
+          pvcMount:
+          - mountPath: /data
+            taskOutputParameter:
+              outputParameterKey: name
+              producerTask: createpvc
+          secretAsEnv:
+          - keyToEnv:
+            - envVar: AWS_ACCESS_KEY_ID
+              secretKey: accesskey
+            - envVar: AWS_SECRET_ACCESS_KEY
+              secretKey: secretkey
+            secretName: mlpipeline-minio-artifact
+        exec-ingest-os:
+          pvcMount:
+          - mountPath: /data
+            taskOutputParameter:
+              outputParameterKey: name
+              producerTask: createpvc
+          secretAsEnv:
+          - keyToEnv:
+            - envVar: OPENSEARCH_USER
+              secretKey: username
+            - envVar: OPENSEARCH_PASSWORD
+              secretKey: password
+            - envVar: OPENSEARCH_HOST
+              secretKey: host
+            - envVar: OPENSEARCH_PORT
+              secretKey: port
+            secretName: opensearch-secret
+        exec-remove-unsupported-files:
+          pvcMount:
+          - mountPath: /data
+            taskOutputParameter:
+              outputParameterKey: name
+              producerTask: createpvc
+        exec-setup-os:
+          secretAsEnv:
+          - keyToEnv:
+            - envVar: OPENSEARCH_USER
+              secretKey: username
+            - envVar: OPENSEARCH_PASSWORD
+              secretKey: password
+            - envVar: OPENSEARCH_HOST
+              secretKey: host
+            - envVar: OPENSEARCH_PORT
+              secretKey: port
+            secretName: opensearch-secret
