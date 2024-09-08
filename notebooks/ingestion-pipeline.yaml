@@ -415,7 +415,7 @@ root:
               runtimeValue:
                 constant: microk8s-hostpath
         taskInfo:
-          name: Create PVC
+          name: createpvc
       deletepvc:
         cachingOptions:
           enableCache: true
@@ -431,7 +431,7 @@ root:
                 outputParameterKey: name
                 producerTask: createpvc
         taskInfo:
-          name: Destroy PVC
+          name: deletepvc
       download-data:
         cachingOptions: {}
         componentRef:
@@ -445,7 +445,7 @@ root:
               runtimeValue:
                 constant: rag-demo-source
         taskInfo:
-          name: Download data from S3
+          name: download-data
       ingest-os:
         cachingOptions: {}
         componentRef:
@@ -462,7 +462,7 @@ root:
             index_name:
               componentInputParameter: rag_index_name
         taskInfo:
-          name: Save embeddings into the OpenSearch
+          name: ingest-os
       remove-unsupported-files:
         cachingOptions: {}
         componentRef:
@@ -477,7 +477,7 @@ root:
                 outputParameterKey: Output
                 producerTask: download-data
         taskInfo:
-          name: Remove files with unsupported formats
+          name: remove-unsupported-files
       setup-os:
         cachingOptions:
           enableCache: true
@@ -490,7 +490,7 @@ root:
             rag_index_name:
               componentInputParameter: rag_index_name
         taskInfo:
-          name: Configure OpenSearch
+          name: setup-os
   inputDefinitions:
     parameters:
       rag_index_force_recreate:
