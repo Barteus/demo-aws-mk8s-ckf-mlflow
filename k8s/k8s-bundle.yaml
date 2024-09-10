@@ -20,7 +20,7 @@ applications:
   #   options:
   #     hostpath_storage: true
   #     role: worker
-  #   constraints: arch=amd64 root-disk=102400 instance-type=g4dn.xlarge
+  #   constraints: arch=amd64 root-disk=512000 instance-type=p3.xlarge
 machines:
   "0":
     constraints: arch=amd64 root-disk=102400 instance-type=t3.xlarge
@@ -29,7 +29,7 @@ machines:
   "2":
     constraints: arch=amd64 root-disk=102400 instance-type=t3.xlarge
   # "3":
-  #   constraints: arch=amd64 root-disk=102400 instance-type=g4dn.xlarge
-relations:
+  #   constraints: arch=amd64 root-disk=1024000 instance-type=p3.xlarge
+# relations:
 # - - microk8s:workers
 #   - microk8s-gpu:control-plane
