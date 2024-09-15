@@ -28,8 +28,8 @@ relations:
 - [ metacontroller-operator:grafana-dashboard, grafana-dashboards ]
 - [ minio:grafana-dashboard, grafana-dashboards ]
 - [ training-operator:grafana-dashboard, grafana-dashboards ]
-- [ katib-db:grafana-dashboard, grafana-dashboards ]
-- [ kfp-db:grafana-dashboard, grafana-dashboards ]
+# - [ katib-db:grafana-dashboard, grafana-dashboards ]
+# - [ kfp-db:grafana-dashboard, grafana-dashboards ]
 
 
 #metrics
@@ -41,5 +41,5 @@ relations:
 - [grafana-agent-k8s:metrics-endpoint, metacontroller-operator:metrics-endpoint]
 - [grafana-agent-k8s:metrics-endpoint, minio:metrics-endpoint]
 - [grafana-agent-k8s:metrics-endpoint, training-operator:metrics-endpoint]
-- [grafana-agent-k8s:metrics-endpoint, katib-db:metrics-endpoint]
-- [grafana-agent-k8s:metrics-endpoint, kfp-db:metrics-endpoint]
+# - [grafana-agent-k8s:metrics-endpoint, katib-db:metrics-endpoint]
+# - [grafana-agent-k8s:metrics-endpoint, kfp-db:metrics-endpoint]
