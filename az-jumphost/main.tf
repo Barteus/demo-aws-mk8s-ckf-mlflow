@@ -73,7 +73,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   disable_password_authentication = true
 }
 
-output "public_ip" {
+output "instance_public_ip" {
   description = "Public IP of the VM"
   value       = azurerm_public_ip.public_ip.ip_address
 }
