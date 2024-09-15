@@ -3,3 +3,9 @@
 aws-jumphost/aws-credentials.yaml
 opensearch/os-*.yaml
 notebooks/.ipynb_checkpoints/
+
+#terraform files
+.terraform
+.terraform.*
+*.tfstate
+*.tfstate.*

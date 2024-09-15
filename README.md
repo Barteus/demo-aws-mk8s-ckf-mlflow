@@ -10,8 +10,8 @@
 - Add Opensearch COS monitoring
 - use Embeddings service as KServe endpoint
 - multicloud:
-    - juju cloud config
-    - jumphost create command
+  - juju cloud config
+  - jumphost create command
 - NVidia NIM as LLM & Embeddings
 
 ## Infrastructure Installation
@@ -20,10 +20,13 @@
 
 Skip if you already have a jumphost or decide to use your local machine.
 
-For **AWS**, go to the aws-jumphost folder and use terraform:
+For **AWS**, go to the `aws-jumphost` folder.
+
+For **Azure**, go to the `az-jumphost` folder.
+
+Run Terraform scripts:
 
 ```bash
-cd ./aws-jumphost
 terraform init
 terraform apply
 ```
