@@ -2,6 +2,9 @@
 #credential files
 aws-jumphost/aws-credentials.yaml
 opensearch/os-*.yaml
+models/keys.sh
+
+#notebook checkpoints
 notebooks/.ipynb_checkpoints/
 
 #terraform files

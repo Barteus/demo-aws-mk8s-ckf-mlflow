@@ -125,7 +125,7 @@ echo $MK8S_LEADER_IP
 On your local computer in new terminal run:
 
 ```bash
-shuttle -r ubuntu@$MK8S_LEADER_IP 10.0.0.0/8 172.31.0.0/16
+sshuttle -r ubuntu@$MK8S_LEADER_IP 10.0.0.0/8 172.31.0.0/16
 ```
 
 ### Deploy COS
@@ -160,7 +160,7 @@ juju consume aws-controller:admin/cos.prometheus-receive-remote-write cos-promet
 juju deploy grafana-agent grafana-agent-cos --channel latest/stable -m mk8s
 
 juju relate grafana-agent-cos:cos-agent microk8s:cos-agent -m mk8s
-#juju relate grafana-agent-cos:cos-agent microk8s-gpu:cos-agent -m mk8s
+juju relate grafana-agent-cos:cos-agent microk8s-gpu:cos-agent -m mk8s
 juju relate cos-loki:logging grafana-agent-cos:logging-consumer -m mk8s
 juju relate cos-prometheus:receive-remote-write grafana-agent-cos:send-remote-write -m mk8s
 juju relate cos-grafana:grafana-dashboard grafana-agent-cos:grafana-dashboards-provider -m mk8s
@@ -189,7 +189,6 @@ juju add-model kubeflow mk8s
 
 juju deploy -m kubeflow --debug ./ckf/bundle.yaml \
     --overlay ./ckf/authentication-overlay.yaml \
-    --overlay ./ckf/cos-integration.yaml \
     --overlay ./ckf/mlflow-integration.yaml \
     --trust
 ```
@@ -256,11 +255,27 @@ Run Ingestion pipeline notebook or create a Kubeflow pipeline using ingestion-pi
 
 ### Deploy ML models
 
-TBD
+Check if KServe works by followind the script `kserve-test.sh`. Update the authentication token from you browser.
+
+Before deploying the NIM export the HuggingFace token and NGC API key.
+
+```bash
+export HF_TOKEN=...
+export NGC_API_KEY=...
+```
+
+Configure the nim-kserve integration:
+```bash
+bash ./models/setup.sh
+```
 
 ### Deploy Chat UI
 
-TBD
+Deploy the UI and expose it outside of the cluster using the script:
+
+```bash
+bash ./ui/setup.sh
+```
 
 ## Cleanup
 
