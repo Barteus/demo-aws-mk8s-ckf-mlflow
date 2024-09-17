@@ -46,3 +46,18 @@ spec:
     matchLabels:
       access-opensearch: "true"
 EOF
+
+#for chatbot UI
+cat <<EOF | kubectl apply  -f -
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opensearch-secret
+type: Opaque
+stringData:
+  host: "$OS_IP"
+  port: "$OS_PORT"
+  username: "$OS_USERNAME"
+  password: "$OS_PASSWORD"
+EOF

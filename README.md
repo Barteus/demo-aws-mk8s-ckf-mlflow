@@ -120,6 +120,7 @@ On the jumphost run:
 ```shell
 MK8S_LEADER_IP=$(juju status -m mk8s microk8s/leader --format json | jq -r '.machines[] | .["dns-name"]')
 echo $MK8S_LEADER_IP
+echo sshuttle -r ubuntu@$MK8S_LEADER_IP 10.0.0.0/8 172.31.0.0/16
 ```
 
 On your local computer in new terminal run:
@@ -219,9 +220,9 @@ Ignore the error with replicas, or edit the bundle to deploy Opensearch in HA mo
 When deployment is GREEN, get the access information:
 
 ```bash
-juju run opensearch/leader get-password > ./opensearch/os-creds.yaml
+juju run opensearch/0 get-password > ./opensearch/os-creds.yaml
 
-export OS_IP=$(juju status -m os opensearch/leader --format json | jq -r '.machines[] | .["dns-name"]')
+export OS_IP=$(juju status -m os opensearch/0 --format json | jq -r '.machines[] | .["dns-name"]')
 export OS_PORT=9200
 export OS_USERNAME=$(cat ./opensearch/os-creds.yaml | yq -C ".username")
 export OS_PASSWORD=$(cat ./opensearch/os-creds.yaml | yq -C ".password")
@@ -298,4 +299,3 @@ Run it only when no Pipeline Run is executed.
 ```bash
 kubectl delete po -n admin -l workflows.argoproj.io/completed=true
 ```
-
