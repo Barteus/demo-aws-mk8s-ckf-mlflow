@@ -1,18 +1,6 @@
 # Multicloud E2E RAG demo
 
-## TODO
-- Deploy the LLM using vLLM & KServe
-- Create Chat UI using embedder & KServe endpoint
-    - simple chat application with history
-
-**Enhancements**
-- remove jumphost.sh & apps.sh
-- Add Opensearch COS monitoring
-- use Embeddings service as KServe endpoint
-- multicloud:
-  - juju cloud config
-  - jumphost create command
-- NVidia NIM as LLM & Embeddings
+## !!! Repository under development !!!
 
 ## Infrastructure Installation
 
