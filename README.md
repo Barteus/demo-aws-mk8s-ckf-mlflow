@@ -266,6 +266,13 @@ Deploy the UI and expose it outside of the cluster using the script:
 bash ./ui/setup.sh
 ```
 
+If you want to build or adjust the Chatbot UI. Go into UI, build new image and upload it to your registry:
+
+```bash
+docker build . -t bponieckiklotz/llm-chatbot:kserve-v2
+docker push bponieckiklotz/llm-chatbot:kserve-v2
+```
+
 ## Cleanup
 
 Remove in the AWS cloud console:
