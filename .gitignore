@@ -12,3 +12,6 @@ notebooks/.ipynb_checkpoints/
 .terraform.*
 *.tfstate
 *.tfstate.*
+
+#python virtal env
+.venv/*
