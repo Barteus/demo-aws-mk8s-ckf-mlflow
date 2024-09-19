@@ -1,5 +1,7 @@
 #!/bin/bash
 
+NIM_URL=$(kubectl get svc llama3-8b-instruct-1xgpu-predictor-00001 -n admin -o jsonpath='{.spec.clusterIP}')
+
 kubectl apply -f - <<EOF
 apiVersion: apps/v1
 kind: Deployment
@@ -18,7 +20,7 @@ spec:
     spec:
       containers:
       - name: ui
-        image: bponieckiklotz/llm-chatbot:kserve-v1
+        image: bponieckiklotz/llm-chatbot:kserve-v2
         ports:
         - containerPort: 8501
         env:
@@ -47,7 +49,7 @@ spec:
               key: password
               optional: false
         - name: LLM_API_URL
-          value: "http://llama3-8b-instruct-1xgpu-predictor-00001-private/v1"
+          value: "http://$NIM_URL/v1"
         - name: LLM_MODEL_NAME
           value: "meta/llama3-8b-instruct"
 ---

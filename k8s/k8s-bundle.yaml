@@ -3,7 +3,7 @@ applications:
   microk8s:
     charm: microk8s
     channel: 1.28/stable
-    num_units: 2
+    num_units: 3
     options:
       hostpath_storage: true
     constraints: arch=amd64 root-disk=102400 instance-type=t3.xlarge

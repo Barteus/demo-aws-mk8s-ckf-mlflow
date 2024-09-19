@@ -25,7 +25,7 @@ Export the public ip of the jumphost and SSH using defined key
 export JUMPHOST_IP=$(terraform output -raw instance_public_ip)
 export PATH_TO_KEY=...
 
-ssh -i PATH_TO_KEY ubuntu@$JUMPHOST_IP
+ssh -i $PATH_TO_KEY ubuntu@$JUMPHOST_IP
 ```
 
 Install common packages for jumphost from project root directory
@@ -107,7 +107,6 @@ On the jumphost run:
 
 ```shell
 MK8S_LEADER_IP=$(juju status -m mk8s microk8s/leader --format json | jq -r '.machines[] | .["dns-name"]')
-echo $MK8S_LEADER_IP
 echo sshuttle -r ubuntu@$MK8S_LEADER_IP 10.0.0.0/8 172.31.0.0/16
 ```
 
@@ -178,6 +177,7 @@ juju add-model kubeflow mk8s
 
 juju deploy -m kubeflow --debug ./ckf/bundle.yaml \
     --overlay ./ckf/authentication-overlay.yaml \
+    --overlay ./ckf/cos-integration.yaml \
     --overlay ./ckf/mlflow-integration.yaml \
     --trust
 ```
