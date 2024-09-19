@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NIM_URL=$(kubectl get svc llama3-8b-instruct-1xgpu-predictor-00001 -n admin -o jsonpath='{.spec.clusterIP}')
+NIM_URL=$(kubectl get svc llama3-8b-instruct-1xgpu-predictor-00001-private -n admin -o jsonpath='{.spec.clusterIP}')
 
 kubectl apply -f - <<EOF
 apiVersion: apps/v1

@@ -37,7 +37,7 @@ def vector_search(
 
 hfe = embeddings()
     
-vector_search = vector_search(
+vs = vector_search(
     os_host=os.getenv('OPENSEARCH_HOST', "34.245.99.62"),
     os_port=os.getenv('OPENSEARCH_PORT', 9200),
     os_user=os.getenv('OPENSEARCH_USER', "admin"),
@@ -53,7 +53,7 @@ llm = VLLMOpenAI(
     
 )
 
-st.title("Canonical and NVidia RAG Demo with NIMs", anchor=False)
+st.title("Canonical and NVIDIA RAG Demo with NIMs", anchor=False)
 
 # Initialize chat history
 if "messages" not in st.session_state:
