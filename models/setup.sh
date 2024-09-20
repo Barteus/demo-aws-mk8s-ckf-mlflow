@@ -25,8 +25,6 @@ spec:
   resources:
     requests:
       storage: 200G
-#   nodeSelector:
-#     nvidia.com/gpu.present: True
 ---
 apiVersion: serving.kserve.io/v1alpha1
 kind: ClusterServingRuntime
@@ -42,11 +40,6 @@ spec:
   - env:
     - name: NIM_CACHE_PATH
       value: /opt/nim/.cache
-    - name: HF_TOKEN
-      valueFrom:
-        secretKeyRef:
-          name: nvidia-nim-secrets
-          key: HF_TOKEN
     - name: NGC_API_KEY
       valueFrom:
         secretKeyRef:
