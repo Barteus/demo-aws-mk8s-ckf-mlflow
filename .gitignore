@@ -15,3 +15,6 @@ notebooks/.ipynb_checkpoints/
 
 #python virtal env
 .venv/*
+ui/.chainlit
+ui/__pycache__
+ui/.files

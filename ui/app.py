@@ -7,6 +7,11 @@ from langchain_core.globals import set_verbose, set_debug
 
 from langchain_community.llms import VLLMOpenAI
 
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
+
+from langchain import hub
+
 import logging
 
 logging.getLogger().setLevel(logging.ERROR)
@@ -22,7 +27,7 @@ def embeddings(model_name= "sentence-transformers/all-MiniLM-L6-v2", use_gpu=Fal
 
 def vector_search(
     os_host, os_port, os_user, os_user_pass, 
-    embedding_function, os_index_name = "pagedata_index"
+    embedding_function, os_index_name = "rag_index"
 ):
     opensearch_vector_search = OpenSearchVectorSearch(
         opensearch_url = f"https://{os_host}:{os_port}",
@@ -38,20 +43,52 @@ def vector_search(
 hfe = embeddings()
     
 vs = vector_search(
-    os_host=os.getenv('OPENSEARCH_HOST', "34.245.99.62"),
+    os_host=os.getenv('OPENSEARCH_HOST', "3.250.131.254"),
     os_port=os.getenv('OPENSEARCH_PORT', 9200),
     os_user=os.getenv('OPENSEARCH_USER', "admin"),
-    os_user_pass=os.getenv('OPENSEARCH_PASSWORD', "admin"),
+    os_user_pass=os.getenv('OPENSEARCH_PASSWORD', "An1IpI0BMfcqUo2XCYjwEWdk1fXKuz1Y"),
     embedding_function=hfe
 )
 
 llm = VLLMOpenAI(
     openai_api_key="EMPTY",
-    openai_api_base=os.getenv('LLM_API_URL', "http://10.152.183.161/v1/"),
+    openai_api_base=os.getenv('LLM_API_URL', "http://10.152.183.118/v1/"),
     model_name=os.getenv('LLM_MODEL_NAME', "meta/llama3-8b-instruct"),
-    max_tokens=512
-    
+    max_tokens=256,
+    verbose=True
 )
+
+prompt = hub.pull("rlm/rag-prompt-llama")
+
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+rag_chain_from_docs = (
+    RunnablePassthrough.assign(context=(lambda x: format_docs(x["context"])))
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
+def post_process_rag_ans(input_stream):
+    for t in input_stream:
+        if "answer" in t.keys():
+            val = t["answer"]
+            if val == " [/":
+                break
+            else:
+                yield val
+        if "question" in t.keys():
+            yield f"\n**Question**: {t['question']}\n"
+        if "context" in t.keys():
+            yield "\n**Context**\n"
+            formatted_documents = "\n\n".join(f"\nDocument source: {doc.metadata['source']}\n\nContent: {doc.page_content}\n" for doc in t["context"])
+            yield formatted_documents
+            yield "\n**Answer**:\n\n"
+
+rag_chain_with_source = RunnableParallel(
+    {"context": vs.as_retriever(), "question": RunnablePassthrough()}
+).assign(answer=rag_chain_from_docs)
 
 st.title("Canonical and NVIDIA RAG Demo with NIMs", anchor=False)
 
@@ -73,7 +110,8 @@ if question := st.chat_input("Ask your question!", key="chatbot_main_area"):
 
     # # Display assistant response in chat message container
     with st.chat_message("assistant"):
-        response = st.write_stream(llm.stream(question))
+        response = st.write_stream(
+            post_process_rag_ans(rag_chain_with_source.stream(question)))
     # Add assistant response to chat history
     st.session_state.messages.append(
         {"role": "assistant", "content": response}
