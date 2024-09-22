@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: ui
-        image: bponieckiklotz/llm-chatbot:kserve-v2
+        image: bponieckiklotz/llm-chatbot:kserve-v3
         ports:
         - containerPort: 8501
         env:

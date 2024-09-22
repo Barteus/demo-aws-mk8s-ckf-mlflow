@@ -46,7 +46,7 @@ vs = vector_search(
     os_host=os.getenv('OPENSEARCH_HOST', "3.250.131.254"),
     os_port=os.getenv('OPENSEARCH_PORT', 9200),
     os_user=os.getenv('OPENSEARCH_USER', "admin"),
-    os_user_pass=os.getenv('OPENSEARCH_PASSWORD', "An1IpI0BMfcqUo2XCYjwEWdk1fXKuz1Y"),
+    os_user_pass=os.getenv('OPENSEARCH_PASSWORD', "admin"),
     embedding_function=hfe
 )
 
@@ -63,13 +63,6 @@ prompt = hub.pull("rlm/rag-prompt-llama")
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
-rag_chain_from_docs = (
-    RunnablePassthrough.assign(context=(lambda x: format_docs(x["context"])))
-    | prompt
-    | llm
-    | StrOutputParser()
-)
-
 def post_process_rag_ans(input_stream):
     for t in input_stream:
         if "answer" in t.keys():
@@ -85,6 +78,13 @@ def post_process_rag_ans(input_stream):
             formatted_documents = "\n\n".join(f"\nDocument source: {doc.metadata['source']}\n\nContent: {doc.page_content}\n" for doc in t["context"])
             yield formatted_documents
             yield "\n**Answer**:\n\n"
+
+rag_chain_from_docs = (
+    RunnablePassthrough.assign(context=(lambda x: format_docs(x["context"])))
+    | prompt
+    | llm
+    | StrOutputParser()
+)
 
 rag_chain_with_source = RunnableParallel(
     {"context": vs.as_retriever(), "question": RunnablePassthrough()}
@@ -111,7 +111,8 @@ if question := st.chat_input("Ask your question!", key="chatbot_main_area"):
     # # Display assistant response in chat message container
     with st.chat_message("assistant"):
         response = st.write_stream(
-            post_process_rag_ans(rag_chain_with_source.stream(question)))
+            post_process_rag_ans(rag_chain_with_source.stream(question))
+        )
     # Add assistant response to chat history
     st.session_state.messages.append(
         {"role": "assistant", "content": response}
