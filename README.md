@@ -1,7 +1,5 @@
 # Multicloud E2E RAG demo
 
-## !!! Repository under development !!!
-
 ## Infrastructure Installation
 
 ### Create the jumphost
@@ -80,7 +78,6 @@ juju ssh -m mk8s microk8s/leader -- sudo microk8s config > ~/.kube/config
 ```
 
 Taint GPU nodes with PreferNoSchedule:
-
 ```bash
 kubectl get nodes -l "nvidia.com/gpu.present=true" -o jsonpath='{.items[*].metadata.name}' \
     | xargs -I{} kubectl taint nodes {} node-preference=gpu:PreferNoSchedule --overwrite
@@ -92,7 +89,7 @@ Optionally, install volcano scheduler if you need more advanced scheduling polic
 kubectl apply -f https://raw.githubusercontent.com/volcano-sh/volcano/master/installer/volcano-development.yaml
 ```
 
-### Connect to UIs
+### Connect to UIs 
 
 Follow this instruction once to get access to expose MetalLB IPs to your local machine.
 
@@ -225,7 +222,6 @@ echo Certificate saved under ./opensearch/os-cert.yaml
 ```
 
 Connect using curl to check connectivity:
-
 ```bash
 curl -k --cacert ./opensearch/os-cert.yaml -XGET https://$OS_USERNAME:$OS_PASSWORD@$OS_IP:$OS_PORT/
 ```
@@ -255,12 +251,9 @@ export NGC_API_KEY=...
 ```
 
 Configure the nim-kserve integration:
-
 ```bash
 bash ./models/setup.sh
 ```
-
-**Performance:** the model Llama 3 8B generates on A10G on AWS over 30 tokens per second.
 
 ### Deploy Chat UI
 
@@ -273,14 +266,13 @@ bash ./ui/setup.sh
 If you want to build or adjust the Chatbot UI. Go into UI, build new image and upload it to your registry:
 
 ```bash
-docker build . -t bponieckiklotz/llm-chatbot:kserve-v3
-docker push bponieckiklotz/llm-chatbot:kserve-v3
+docker build . -t bponieckiklotz/llm-chatbot:kserve-v4
+docker push bponieckiklotz/llm-chatbot:kserve-v4
 ```
 
 ## Cleanup
 
 Remove in the AWS cloud console:
-
 - machines
 - security groups
 
