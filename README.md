@@ -8,8 +8,6 @@ Skip if you already have a jumphost or decide to use your local machine.
 
 For **AWS**, go to the `aws-jumphost` folder.
 
-For **Azure**, go to the `az-jumphost` folder.
-
 Run Terraform scripts:
 
 ```bash
@@ -89,7 +87,7 @@ Optionally, install volcano scheduler if you need more advanced scheduling polic
 kubectl apply -f https://raw.githubusercontent.com/volcano-sh/volcano/master/installer/volcano-development.yaml
 ```
 
-### Connect to UIs 
+### Connect to UIs
 
 Follow this instruction once to get access to expose MetalLB IPs to your local machine.
 
@@ -222,6 +220,7 @@ echo Certificate saved under ./opensearch/os-cert.yaml
 ```
 
 Connect using curl to check connectivity:
+
 ```bash
 curl -k --cacert ./opensearch/os-cert.yaml -XGET https://$OS_USERNAME:$OS_PASSWORD@$OS_IP:$OS_PORT/
 ```
@@ -234,11 +233,13 @@ sh ./opensearch/os-pod-default.sh
 
 ### Configure Object storage Bucket and Opensearch Index
 
-Go to the Kubeflow and create a Kubeflow Notebook with all PodDefaults enabled.
+Go to the **Kubeflow Dashboard** and create a Kubeflow Notebook with all PodDefaults enabled (Allow access to Kubeflow pipeline, Minio, MLflow, Opensearch).
 
-In the Kubeflow notebook run setup-bucket.ipynb to create bucket and upload all files in the documents folder to it.
+In the Kubeflow notebook clone this repo and go to the `notebooks` folder. Next, run setup-bucket.ipynb to create bucket and upload all files in the documents folder to it. If you want to have more documents uploaded, change the content of the `documents` folder.
 
-Run Ingestion pipeline notebook or create a Kubeflow pipeline using ingestion-pipelines.yaml file.
+Go to the **Kubeflow Pipelines** tab in Kubeflow Dashboard and create the new pipeline. You can download the ingestion-pipelines.yaml file from the repository. Alternativly you can run the `ingestion-pipeline.ipynb`.
+
+To execute the pipeline and create a run, you might need to create experiment first and than create a pipeline run using that Experiment and Pipeline.
 
 ### Deploy ML models
 
@@ -251,6 +252,7 @@ export NGC_API_KEY=...
 ```
 
 Configure the nim-kserve integration:
+
 ```bash
 bash ./models/setup.sh
 ```
@@ -273,6 +275,7 @@ docker push bponieckiklotz/llm-chatbot:kserve-v4
 ## Cleanup
 
 Remove in the AWS cloud console:
+
 - machines
 - security groups
 
