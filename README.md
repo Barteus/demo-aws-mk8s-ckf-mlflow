@@ -243,7 +243,7 @@ To execute the pipeline and create a run, you might need to create experiment fi
 
 ### Deploy ML models
 
-Check if KServe works by followind the script `kserve-test.sh`. Update the authentication token from you browser.
+Check if KServe works by following the script `kserve-test.sh`. Update the authentication token from your browser.
 
 Before deploying the NIM export the NGC API key.
 
