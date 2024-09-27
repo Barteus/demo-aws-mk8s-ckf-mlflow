@@ -275,15 +275,28 @@ docker push bponieckiklotz/llm-chatbot:kserve-v4
 ## Cleanup
 
 Remove in the AWS cloud console:
-
 - machines
 - security groups
+
+All the resources are pre-fixed with `juju-<model-uuid>`
 
 Remove configuration on the jumphost.
 
 ```bash
 rm -Rf ~/.local/share/juju/
 ```
+
+##### Cloud costs
+Estimated costs for the usage of the public cloud with this setup as it is. 
+
+AWS / Compute (~4$/h | ~94$/d | ~656$/w | ~2815$/mo)
+- 3x t3.large (0.0832$/h)
+- 2x m7i.large (0.1008$/h)
+- 1x g5.2xlarge (1.212$/h)
+
+> WARN: DO NOT FORGET TO DESTROY THE ENVIRONMENT ONCE FINISHED.
+
+> NOTE: It can be tweaked.
 
 ### Manual cleanup of Argo Workflows completed pods:
 
