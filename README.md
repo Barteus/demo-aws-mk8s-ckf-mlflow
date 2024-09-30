@@ -91,7 +91,7 @@ kubectl apply -f https://raw.githubusercontent.com/volcano-sh/volcano/master/ins
 
 Follow this instruction once to get access to expose MetalLB IPs to your local machine.
 
-First, add you public key to the Kuberentes leader node. I will use my launchpad ID, you can also add your public key directly to the ~/.ssh/authorized_keys on the remote host.
+First, add your public key to the Kubernetes leader node. I will use my launchpad ID, you can also add your public key directly to the ~/.ssh/authorized_keys on the remote host.
 
 ```bash
 juju ssh -m mk8s microk8s/leader -- ssh-import-id barteus
