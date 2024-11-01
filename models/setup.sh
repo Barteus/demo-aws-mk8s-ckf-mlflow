@@ -147,25 +147,25 @@ spec:
     name: dshm
 EOF
 
-kubectl apply -n admin -f - <<EOF
-apiVersion: serving.kserve.io/v1beta1
-kind: InferenceService
-metadata:
-  annotations:
-    autoscaling.knative.dev/target: "10"
-    sidecar.istio.io/inject: "false"
-  name: nv-embedqa-e5-v5-1xgpu
-spec:
-  predictor:
-    minReplicas: 1
-    model:
-      modelFormat:
-        name: nvidia-nim-nv-embedqa-e5-v5
-      resources:
-        limits:
-          nvidia.com/gpu: "1"
-        requests:
-          nvidia.com/gpu: "1"
-      runtime: nvidia-nim-nv-embedqa-e5-v5-1.0.0
-      storageUri: pvc://nvidia-nim-pvc/
-EOF
+# kubectl apply -n admin -f - <<EOF
+# apiVersion: serving.kserve.io/v1beta1
+# kind: InferenceService
+# metadata:
+#   annotations:
+#     autoscaling.knative.dev/target: "10"
+#     sidecar.istio.io/inject: "false"
+#   name: nv-embedqa-e5-v5-1xgpu
+# spec:
+#   predictor:
+#     minReplicas: 1
+#     model:
+#       modelFormat:
+#         name: nvidia-nim-nv-embedqa-e5-v5
+#       resources:
+#         limits:
+#           nvidia.com/gpu: "1"
+#         requests:
+#           nvidia.com/gpu: "1"
+#       runtime: nvidia-nim-nv-embedqa-e5-v5-1.0.0
+#       storageUri: pvc://nvidia-nim-pvc/
+# EOF
