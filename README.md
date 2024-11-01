@@ -65,7 +65,8 @@ Wait untill all Pods are created and configure additional microk8s plugins
 
 note due to [Issue 303](https://github.com/canonical/microk8s-core-addons/issues/303) you will need to pass the version argument to the GPU addon. 
 ```bash
-juju ssh -m mk8s microk8s/leader -- sudo microk8s enable gpu --version 24.6.2 ingress metallb:10.64.140.43-10.64.140.49
+juju ssh -m mk8s microk8s/leader -- sudo microk8s enable ingress metallb:10.64.140.43-10.64.140.49
+juju ssh -m mk8s microk8s/leader -- sudo microk8s enable gpu --version 24.6.2
 
 juju expose microk8s
 ```
@@ -74,6 +75,12 @@ Save kubeconfig into the kube config default, if you do not use jumphost conside
 
 ```bash
 juju ssh -m mk8s microk8s/leader -- sudo microk8s config > ~/.kube/config
+```
+
+Validate the available GPUs, there should be at least 1 available GPU:
+
+```bash
+kubectl describe nodes  |  tr -d '\000' | sed -n -e '/^Name/,/Roles/p' -e '/^Capacity/,/Allocatable/p' -e '/^Allocated resources/,/Events/p'  | grep -e Name  -e  nvidia.com  | perl -pe 's/\n//'  |  perl -pe 's/Name:/\n/g' | sed 's/nvidia.com\/gpu:\?//g'  | sed '1s/^/Node Available(GPUs)  Used(GPUs)/' | sed 's/$/ 0 0 0/'  | awk '{print $1, $2, $3}'  | column -t
 ```
 
 Taint GPU nodes with PreferNoSchedule:
